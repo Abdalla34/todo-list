@@ -58,7 +58,31 @@
           </div>
         </div>
       </div>
-      <div class="row d-flex justify-content-center mt-5 mb-5">
+      <div class="row d-flex justify-content-center">
+        <div
+          class="col-lg-9 col-md-9 col-sm-12 d-flex justify-content-start gap-2 mt-3"
+        >
+          <div class="btn-created hand-btn">
+            <button
+              class="btn-create text-capitalize"
+              :style="{ opacity: isCreated === true ? 1 : 0.5 }"
+              @click="originalList()"
+            >
+              all created
+            </button>
+          </div>
+          <div class="btn-completed hand-btn">
+            <button
+              class="btn-create text-capitalize"
+              :style="{ opacity: isCompleted === true ? 1 : 0.5 }"
+              @click="showCompletedTasks()"
+            >
+              all completed
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="row d-flex justify-content-center mt-3 mb-5">
         <div class="col-lg-9 col-md-9 col-sm-12">
           <div
             class="parent d-flex justify-content-between gap-2 mt-3"
@@ -109,6 +133,9 @@ export default {
     return {
       AllList: JSON.parse(localStorage.getItem("tasks")) || [],
       ValueTask: "",
+      completedTasks: [],
+      isCompleted: false,
+      isCreated: false,
     };
   },
   methods: {
@@ -131,9 +158,25 @@ export default {
       this.AllList[index].completed = !this.AllList[index].completed;
       this.SaveToLocal();
     },
+    showCompletedTasks() {
+      this.completedTasks = this.AllList.filter(
+        (task) => task.completed !== false
+      );
+      this.AllList = this.completedTasks;
+      this.isCompleted = true;
+      this.isCreated = false;
+    },
+    originalList() {
+      let getLists = JSON.parse(localStorage.getItem("tasks"));
+      this.AllList = getLists;
+      this.isCompleted = false;
+      this.isCreated = true;
+    },
   },
   mounted() {
     this.AllList;
+    this.isCreated = true;
+    this.isCompleted = false;
   },
   computed: {
     totalCreated() {
@@ -241,9 +284,13 @@ svg {
 .opacity {
   opacity: 0.5;
 }
+.hand-btn {
+  font-size: 15px;
+}
 @media (max-width: 767px) {
   .btn-create {
     margin-top: 10px;
+    font-size: 12px;
   }
   .parag {
     font-size: 12px;
