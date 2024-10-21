@@ -39,7 +39,7 @@
           <input class="w-100 task" type="text" v-model="ValueTask" />
         </div>
         <div class="col-lg-2 col-md-2">
-          <button @click="AddTodoList()" class="btn-create w-100">
+          <button @click="NewTaskAdd()" class="btn-create w-100">
             Created
           </button>
         </div>
@@ -53,7 +53,7 @@
           <div class="d-flex gap-2">
             <h6 class="color-text">completed</h6>
             <div class="text-white create hand-complet">
-              {{ totalCompleted }} of {{ AllList.length }}
+              {{ tatalCompleted }} of {{ totalCreated }}
             </div>
           </div>
         </div>
@@ -62,49 +62,35 @@
         <div
           class="col-lg-9 col-md-9 col-sm-12 d-flex justify-content-start gap-2 mt-3"
         >
-          <div class="btn-created hand-btn">
-            <button
-              class="btn-create text-capitalize"
-              :style="{ opacity: isCreated === true ? 1 : 0.5 }"
-              @click="originalList()"
-            >
-              all created
-            </button>
-          </div>
-          <div class="btn-completed hand-btn">
-            <button
-              class="btn-create text-capitalize"
-              :style="{ opacity: isCompleted === true ? 1 : 0.5 }"
-              @click="showCompletedTasks()"
-            >
-              all completed
-            </button>
-          </div>
+          <button class="btn-create" @click="filterTasks('all')">
+            All Created
+          </button>
+          <button class="btn-create" @click="filterTasks('completed')">
+            All Completed
+          </button>
         </div>
       </div>
+
       <div class="row d-flex justify-content-center mt-3 mb-5">
         <div class="col-lg-9 col-md-9 col-sm-12">
           <div
             class="parent d-flex justify-content-between gap-2 mt-3"
-            v-for="(list, index) in AllList"
-            :key="index"
+            v-for="list in filteredTasks"
+            :key="list.id"
           >
             <div class="parag d-flex gap-2">
               <div>
                 <input
                   type="checkbox"
                   v-model="list.completed"
-                  @click="togglecomplete(index)"
+                  @click.stop="toggleStateCheck(list)"
                 />
               </div>
-              <p
-                class="text-white"
-                :class="{ completed: list.completed, opacity: list.completed }"
-              >
+              <p class="text-white" :class="{ completed: list.completed }">
                 {{ list.text.toUpperCase() }}
               </p>
             </div>
-            <div @click="removeList(index)" class="deleted">
+            <div @click.stop="removeList(list.id)" class="deleted">
               <svg
                 width="13"
                 height="14"
@@ -126,84 +112,64 @@
 </template>
 
 <script>
-// import { mapMutations } from "vuex";
 export default {
   name: "HomeView",
   data: () => {
     return {
       AllList: JSON.parse(localStorage.getItem("tasks")) || [],
       ValueTask: "",
-      completedTasks: [],
-      isCompleted: false,
-      isCreated: false,
+      filter: "all",
     };
   },
   methods: {
-    SaveToLocal() {
+    saveToLocalStorage() {
       localStorage.setItem("tasks", JSON.stringify(this.AllList));
     },
-    AddTodoList() {
+    NewTaskAdd() {
       if (this.ValueTask !== "") {
-        let NewObject = { text: this.ValueTask, completed: false };
-        this.AllList.unshift(NewObject);
-        this.SaveToLocal();
+        let AddTask = {
+          id: Date.now(),
+          text: this.ValueTask,
+          completed: false,
+        };
+        this.AllList.unshift(AddTask);
+        this.saveToLocalStorage();
         this.ValueTask = "";
       }
     },
-    removeList(index) {
-      this.AllList.splice(index, 1);
-      this.SaveToLocal();
+    toggleStateCheck(task) {
+      let taskInAllList = this.AllList.find((t) => t.id === task.id);
+      if (taskInAllList) {
+        taskInAllList.completed = !taskInAllList.completed;
+        this.saveToLocalStorage();
+        this.AllList = JSON.parse(localStorage.getItem("tasks")) || [];
+      }
     },
-    togglecomplete(index) {
-      this.AllList[index].completed = !this.AllList[index].completed;
-      this.SaveToLocal();
+    removeList(id) {
+      let taskIndexInAllList = this.AllList.findIndex((t) => t.id === id);
+      if (taskIndexInAllList !== -1) {
+        this.AllList.splice(taskIndexInAllList, 1); 
+        this.saveToLocalStorage(); 
+      }
     },
-    showCompletedTasks() {
-      this.completedTasks = this.AllList.filter(
-        (task) => task.completed !== false
-      );
-      this.AllList = this.completedTasks;
-      this.isCompleted = true;
-      this.isCreated = false;
+    filterTasks(type) {
+      this.filter = type;
     },
-    originalList() {
-      let getLists = JSON.parse(localStorage.getItem("tasks"));
-      this.AllList = getLists;
-      this.isCompleted = false;
-      this.isCreated = true;
-    },
-  },
-  mounted() {
-    this.AllList;
-    this.isCreated = true;
-    this.isCompleted = false;
   },
   computed: {
+    filteredTasks() {
+      if (this.filter === "completed") {
+        return this.AllList.filter((task) => task.completed);
+      }
+      return this.AllList;
+    },
     totalCreated() {
       return this.AllList.length;
     },
-    totalCompleted() {
+    tatalCompleted() {
       return this.AllList.filter((item) => item.completed).length;
     },
   },
-  // mounted() {
-  //   this.AllList = this.$store.state.tasks;
-  // },
-  // methods: {
-  //   addList() {
-  //     if (this.newTask !== "") {
-  //       this.ADTOLIST({ text: this.newTask, completed: false });
-  //       this.newTask = "";
-  //     }
-  //   },
-  //   del(index) {
-  //     this.DELETED(index);
-  //   },
-  //   toggleTask(index) {
-  //     this.UPDATECOMPLETED(index);
-  //   },
-  //   ...mapMutations(["ADTOLIST", "DELETED", "UPDATECOMPLETED"]),
-  // },
 };
 </script>
 <style scoped>
@@ -280,10 +246,9 @@ svg {
 }
 .completed {
   text-decoration: line-through;
-}
-.opacity {
   opacity: 0.5;
 }
+
 .hand-btn {
   font-size: 15px;
 }
