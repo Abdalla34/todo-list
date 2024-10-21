@@ -62,10 +62,18 @@
         <div
           class="col-lg-9 col-md-9 col-sm-12 d-flex justify-content-start gap-2 mt-3"
         >
-          <button class="btn-create" @click="filterTasks('all')">
+          <button
+            class="btn-create"
+            :style="{ opacity: filter !== 'all' ? 0.5 : 1 }"
+            @click="filterTasks('all')"
+          >
             All Created
           </button>
-          <button class="btn-create" @click="filterTasks('completed')">
+          <button
+            class="btn-create"
+            :style="{ opacity: filter !== 'completed' ? 0.5 : 1 }"
+            @click="filterTasks('completed')"
+          >
             All Completed
           </button>
         </div>
@@ -148,8 +156,8 @@ export default {
     removeList(id) {
       let taskIndexInAllList = this.AllList.findIndex((t) => t.id === id);
       if (taskIndexInAllList !== -1) {
-        this.AllList.splice(taskIndexInAllList, 1); 
-        this.saveToLocalStorage(); 
+        this.AllList.splice(taskIndexInAllList, 1);
+        this.saveToLocalStorage();
       }
     },
     filterTasks(type) {
