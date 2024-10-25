@@ -36,12 +36,10 @@
     <div class="container text-center">
       <div class="row input position-relative d-flex justify-content-center">
         <div class="col-lg-7 col-md-7">
-          <input class="w-100 task" type="text" v-model="ValueTask" />
+          <input class="w-100 task" type="text" v-model="VlueTask" />
         </div>
         <div class="col-lg-2 col-md-2">
-          <button @click="NewTaskAdd()" class="btn-create w-100">
-            Created
-          </button>
+          <button @click="AddTask()" class="btn-create w-100">Created</button>
         </div>
       </div>
       <div class="row d-flex justify-content-center mt-5">
@@ -53,52 +51,60 @@
           <div class="d-flex gap-2">
             <h6 class="color-text">completed</h6>
             <div class="text-white create hand-complet">
-              {{ tatalCompleted }} of {{ totalCreated }}
+              {{ totalCompleted }} of {{ totalCreated }}
             </div>
           </div>
         </div>
       </div>
       <div class="row d-flex justify-content-center">
         <div
-          class="col-lg-9 col-md-9 col-sm-12 d-flex justify-content-start gap-2 mt-3"
+          class="col-lg-9 col-md-9 col-sm-12 d-flex justify-content-between gap-2 mt-3 flex-wrap"
         >
-          <button
-            class="btn-create"
-            :style="{ opacity: filter !== 'all' ? 0.5 : 1 }"
-            @click="filterTasks('all')"
-          >
-            All Created
-          </button>
-          <button
-            class="btn-create"
-            :style="{ opacity: filter !== 'completed' ? 0.5 : 1 }"
-            @click="filterTasks('completed')"
-          >
-            All Completed
-          </button>
+          <div class="d-flex gap-2">
+            <button
+              :style="{ opacity: filter !== 'all' ? 0.5 : 1 }"
+              @click="filterBtn('all')"
+              class="btn-create"
+            >
+              All Created
+            </button>
+            <button
+              :style="{ opacity: filter !== 'state' ? 0.5 : 1 }"
+              @click="filterBtn('state')"
+              class="btn-create"
+            >
+              All Completed
+            </button>
+          </div>
+          <div class="search">
+            <input
+              type="search"
+              placeholder="write your search"
+              v-model="search"
+            />
+          </div>
         </div>
       </div>
-
       <div class="row d-flex justify-content-center mt-3 mb-5">
         <div class="col-lg-9 col-md-9 col-sm-12">
           <div
             class="parent d-flex justify-content-between gap-2 mt-3"
-            v-for="list in filteredTasks"
+            v-for="list in filterTasks"
             :key="list.id"
           >
             <div class="parag d-flex gap-2">
               <div>
                 <input
                   type="checkbox"
-                  v-model="list.completed"
-                  @click.stop="toggleStateCheck(list)"
+                  v-model="list.State"
+                  @change="toogleState(list.id)"
                 />
               </div>
-              <p class="text-white" :class="{ completed: list.completed }">
+              <p class="text-white" :class="{ completed: list.State }">
                 {{ list.text.toUpperCase() }}
               </p>
             </div>
-            <div @click.stop="removeList(list.id)" class="deleted">
+            <div @click="Remove(list.id)" class="deleted">
               <svg
                 width="13"
                 height="14"
@@ -115,6 +121,12 @@
           </div>
         </div>
       </div>
+      <div
+        class="text-white message text-center mt-4"
+        v-if="filter === 'state' && filterTasks.length === 0"
+      >
+        لا توجد مهام مكتملة حاليا
+      </div>
     </div>
   </div>
 </template>
@@ -124,58 +136,58 @@ export default {
   name: "HomeView",
   data: () => {
     return {
-      AllList: JSON.parse(localStorage.getItem("tasks")) || [],
-      ValueTask: "",
+      VlueTask: "",
+      AllList: JSON.parse(localStorage.getItem("list")) || [],
+      search: "",
       filter: "all",
     };
   },
   methods: {
-    saveToLocalStorage() {
-      localStorage.setItem("tasks", JSON.stringify(this.AllList));
+    SaveLocal() {
+      localStorage.setItem("list", JSON.stringify(this.AllList));
     },
-    NewTaskAdd() {
-      if (this.ValueTask !== "") {
-        let AddTask = {
-          id: Date.now(),
-          text: this.ValueTask,
-          completed: false,
-        };
-        this.AllList.unshift(AddTask);
-        this.saveToLocalStorage();
-        this.ValueTask = "";
+    AddTask() {
+      if (this.VlueTask !== "") {
+        let NewTask = { id: Date.now(), text: this.VlueTask, State: false };
+        this.AllList.unshift(NewTask);
+        this.VlueTask = "";
+        this.SaveLocal();
       }
     },
-    toggleStateCheck(task) {
-      let taskInAllList = this.AllList.find((t) => t.id === task.id);
-      if (taskInAllList) {
-        taskInAllList.completed = !taskInAllList.completed;
-        this.saveToLocalStorage();
-        this.AllList = JSON.parse(localStorage.getItem("tasks")) || [];
+    Remove(id) {
+      let Remove = this.AllList.filter((item) => item.id !== id);
+      this.AllList = Remove;
+      this.SaveLocal();
+    },
+    toogleState(id) {
+      let State = this.AllList.find((item) => item.id === id);
+      if (State) {
+        this.State = !this.State;
+        this.SaveLocal();
       }
     },
-    removeList(id) {
-      let taskIndexInAllList = this.AllList.findIndex((t) => t.id === id);
-      if (taskIndexInAllList !== -1) {
-        this.AllList.splice(taskIndexInAllList, 1);
-        this.saveToLocalStorage();
-      }
-    },
-    filterTasks(type) {
+    filterBtn(type) {
       this.filter = type;
     },
   },
   computed: {
-    filteredTasks() {
-      if (this.filter === "completed") {
-        return this.AllList.filter((task) => task.completed);
+    filterTasks() {
+      let filtered = this.AllList;
+      if (this.search) {
+        filtered = filtered.filter((task) =>
+          task.text.toLowerCase().includes(this.search.toLowerCase())
+        );
       }
-      return this.AllList;
+      if (this.filter === "state") {
+        filtered = filtered.filter((item) => item.State);
+      }
+      return filtered;
     },
     totalCreated() {
       return this.AllList.length;
     },
-    tatalCompleted() {
-      return this.AllList.filter((item) => item.completed).length;
+    totalCompleted() {
+      return this.AllList.filter((item) => item.State === true).length;
     },
   },
 };
@@ -260,6 +272,24 @@ svg {
 .hand-btn {
   font-size: 15px;
 }
+.search input {
+  background-color: #262626;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 4px;
+}
+.search input:focus {
+  border: 2px solid #4ea8de;
+  outline: none;
+}
+.message {
+  background-color: #007bff;
+  width: fit-content;
+  margin: auto;
+  padding: 10px;
+  border-radius: 20px;
+}
 @media (max-width: 767px) {
   .btn-create {
     margin-top: 10px;
@@ -267,6 +297,9 @@ svg {
   }
   .parag {
     font-size: 12px;
+  }
+  .search {
+    margin-top: 10px;
   }
 }
 </style>
